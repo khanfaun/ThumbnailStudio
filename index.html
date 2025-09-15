@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trình Chỉnh Sửa Thumbnail Hàng Loạt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      body {
+        font-family: 'Inter', sans-serif;
+      }
+      @import url('https://rsms.me/inter/inter.css');
+
+      /* Custom scrollbar for a cleaner look */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f5f9; /* bg-slate-100 */
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1; /* bg-slate-300 */
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8; /* bg-slate-400 */
+      }
+      
+      .transformable-object-hover {
+        outline: 2px dashed #a5b4fc; /* indigo-300 */
+        outline-offset: 2px;
+      }
+
+      .transform-controls {
+        position: absolute;
+        border: 2px solid #4f46e5; /* indigo-600 */
+        pointer-events: none;
+      }
+      .handle {
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        background-color: #4f46e5; /* indigo-600 */
+        border: 2px solid white;
+        border-radius: 50%;
+        pointer-events: all;
+        cursor: pointer;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+      }
+      .handle-br { bottom: -7px; right: -7px; cursor: se-resize; }
+      .handle-bl { bottom: -7px; left: -7px; cursor: sw-resize; }
+      .handle-tr { top: -7px; right: -7px; cursor: ne-resize; }
+      .handle-tl { top: -7px; left: -7px; cursor: nw-resize; }
+      
+      .handle-t { top: -7px; left: calc(50% - 7px); cursor: ns-resize; }
+      .handle-b { bottom: -7px; left: calc(50% - 7px); cursor: ns-resize; }
+      .handle-l { top: calc(50% - 7px); left: -7px; cursor: ew-resize; }
+      .handle-r { top: calc(50% - 7px); right: -7px; cursor: ew-resize; }
+      
+      .handle-rotate {
+        top: -26px;
+        left: calc(50% - 7px);
+        cursor: alias; /* Using alias for rotation is a common pattern */
+      }
+
+      .guide-line {
+        position: absolute;
+        pointer-events: all;
+        z-index: 100;
+      }
+      .guide-line.horizontal {
+        width: 100%;
+        height: 1px;
+        cursor: ns-resize;
+      }
+      .guide-line.vertical {
+        height: 100%;
+        width: 1px;
+        cursor: ew-resize;
+      }
+      .guide-line-delete-btn {
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        background: white;
+        border: 1px solid #94a3b8;
+        border-radius: 50%;
+        color: #94a3b8;
+        font-size: 10px;
+        line-height: 14px;
+        text-align: center;
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+      .guide-line:hover .guide-line-delete-btn {
+        opacity: 1;
+      }
+      .guide-line.horizontal .guide-line-delete-btn {
+        left: 36px;
+        top: -8px;
+      }
+      .guide-line.vertical .guide-line-delete-btn {
+        top: 36px;
+        left: -8px;
+      }
+
+      .snap-indicator {
+        position: absolute;
+        background-color: #ef4444; /* red-500 */
+        z-index: 101;
+      }
+      .snap-indicator.horizontal {
+        width: 100%;
+        height: 1px;
+      }
+      .snap-indicator.vertical {
+        height: 100%;
+        width: 1px;
+      }
+      
+    </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "vite": "https://aistudiocdn.com/vite@^7.1.5",
+    "path": "https://aistudiocdn.com/path@^0.12.7"
+  }
+}
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+  <body class="bg-slate-100 text-slate-800 overflow-hidden">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>

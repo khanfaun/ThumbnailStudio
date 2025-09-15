@@ -1,0 +1,5 @@
+{
+  "name": "Trình Chỉnh Sửa Thumbnail Hàng Loạt",
+  "description": "Một ứng dụng web để chỉnh sửa thumbnail ảnh hàng loạt. Người dùng có thể tạo nhiều artboard, thêm, sửa, xóa văn bản và hình ảnh. Các đối tượng có thể được di chuyển, thay đổi kích thước và xoay một cách tự do.",
+  "requestFramePermissions": []
+}
