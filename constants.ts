@@ -2,7 +2,7 @@ import { Artboard, LayerType } from './types';
 
 export const initialArtboards: Artboard[] = [
   {
-    "id": "artboard-1757416124151",
+    "id": "artboard-1758179632883",
     "name": "Thumbnail Mẫu 1",
     "width": 1080,
     "height": 1080,
@@ -35,10 +35,10 @@ export const initialArtboards: Artboard[] = [
     ],
     "layers": [
       {
-        "id": "image-1757416124151-0",
+        "id": "image-1758179632883-0",
         "dataId": "@bg",
         "type": LayerType.Image,
-        "src": "https://github.com/khanfaun/imageproducts/blob/main/Camp%209.9/nen1.jpg?raw=true",
+        "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/nen1.jpg?raw=true",
         "x": 0,
         "y": 0,
         "width": 1080,
@@ -49,7 +49,7 @@ export const initialArtboards: Artboard[] = [
         "name": "Background"
       },
       {
-        "id": "image-1757416124151-1",
+        "id": "image-1758179632883-1",
         "dataId": "@img",
         "type": LayerType.Image,
         "src": "https://raw.githubusercontent.com/khanfaun/imageproducts/refs/heads/main/JBL%20Go%204/JBL%20Go%204%20Red.png",
@@ -63,7 +63,7 @@ export const initialArtboards: Artboard[] = [
         "name": "Product"
       },
       {
-        "id": "text-1757416124151-2",
+        "id": "text-1758179632883-2",
         "dataId": "Name",
         "type": LayerType.Text,
         "spans": [
@@ -79,9 +79,9 @@ export const initialArtboards: Artboard[] = [
         "color": "#facc15",
         "fontWeight": 800,
         "x": 65.21472392638037,
-        "y": 297.6651982378855,
+        "y": 301.6651982378855,
         "width": 353,
-        "height": 106,
+        "height": 98,
         "rotation": 0,
         "zIndex": 5,
         "locked": false,
@@ -90,7 +90,7 @@ export const initialArtboards: Artboard[] = [
         "name": "Name"
       },
       {
-        "id": "text-1757416124151-3",
+        "id": "text-1758179632883-3",
         "dataId": "Scheme1",
         "type": LayerType.Text,
         "spans": [
@@ -105,9 +105,9 @@ export const initialArtboards: Artboard[] = [
         "color": "#ffffff",
         "fontWeight": 700,
         "x": 91.30828896516309,
-        "y": 440.18942731277536,
+        "y": 444.68942731277536,
         "width": 129,
-        "height": 82,
+        "height": 73,
         "rotation": 0,
         "zIndex": 8,
         "locked": false,
@@ -115,7 +115,7 @@ export const initialArtboards: Artboard[] = [
         "name": "Scheme2"
       },
       {
-        "id": "text-1757416124151-4",
+        "id": "text-1758179632883-4",
         "dataId": "Scheme2",
         "type": LayerType.Text,
         "spans": [
@@ -130,9 +130,9 @@ export const initialArtboards: Artboard[] = [
         "color": "#ffffff",
         "fontWeight": 700,
         "x": 317.9029485689576,
-        "y": 440.18942731277536,
+        "y": 444.68942731277536,
         "width": 133,
-        "height": 82,
+        "height": 73,
         "rotation": 0,
         "zIndex": 7,
         "locked": false,
@@ -140,7 +140,7 @@ export const initialArtboards: Artboard[] = [
         "name": "Scheme1"
       },
       {
-        "id": "text-1757416124151-5",
+        "id": "text-1758179632883-5",
         "dataId": "Note",
         "type": LayerType.Text,
         "spans": [
@@ -154,9 +154,9 @@ export const initialArtboards: Artboard[] = [
         "color": "#ffffff",
         "fontWeight": 400,
         "x": 790,
-        "y": 874.1104294478528,
+        "y": 875.1104294478528,
         "width": 188,
-        "height": 32,
+        "height": 30,
         "rotation": 0,
         "zIndex": 6,
         "locked": false,
@@ -165,7 +165,7 @@ export const initialArtboards: Artboard[] = [
         "name": "Note"
       },
       {
-        "id": "image-1757416124151-6",
+        "id": "image-1758179632883-6",
         "dataId": "",
         "x": 44.98237885462556,
         "y": 425.5506607929516,
@@ -173,13 +173,13 @@ export const initialArtboards: Artboard[] = [
         "zIndex": 1,
         "locked": false,
         "type": LayerType.Image,
-        "src": "https://github.com/khanfaun/imageproducts/blob/main/Camp%209.9/Voucher.png?raw=true",
+        "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/Voucher.png?raw=true",
         "width": 225.55066079295153,
         "height": 111.27753303964755,
         "name": "Voucher"
       },
       {
-        "id": "image-1757416124151-7",
+        "id": "image-1758179632883-7",
         "dataId": "",
         "x": 36.96008215994163,
         "y": 666.8092754249885,
@@ -187,12 +187,12 @@ export const initialArtboards: Artboard[] = [
         "zIndex": 3,
         "locked": false,
         "type": LayerType.Image,
-        "src": "https://github.com/khanfaun/imageproducts/blob/main/Camp%209.9/Tuideo.png?raw=true",
+        "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/Tuideo.png?raw=true",
         "width": 377.7973568281938,
         "height": 333.30396475770925
       },
       {
-        "id": "image-1757416124151-8",
+        "id": "image-1758179632883-8",
         "dataId": "",
         "x": 274.26872246696036,
         "y": 425.5506607929516,
@@ -200,18 +200,18 @@ export const initialArtboards: Artboard[] = [
         "zIndex": 2,
         "locked": false,
         "type": LayerType.Image,
-        "src": "https://github.com/khanfaun/imageproducts/blob/main/Camp%209.9/Voucher.png?raw=true",
+        "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/Voucher.png?raw=true",
         "width": 225.55066079295153,
         "height": 111.27753303964755,
         "name": "Voucher"
       },
       {
-        "id": "text-1757416339547",
+        "id": "text-1758179632883-9",
         "dataId": "Scheme3",
-        "x": 65.21472392638037,
-        "y": 551.4110429447853,
-        "width": 181.23926380368096,
-        "height": 60,
+        "x": 153.83435582822085,
+        "y": 556.4110429447853,
+        "width": 4,
+        "height": 50,
         "rotation": 0,
         "zIndex": 9,
         "locked": false,
@@ -235,12 +235,12 @@ export const initialArtboards: Artboard[] = [
         "name": "Scheme3"
       },
       {
-        "id": "text-1757416372930",
+        "id": "text-1758179632883-10",
         "dataId": "Scheme4",
-        "x": 300.4907975460122,
-        "y": 554.7852760736197,
-        "width": 172.9570552147239,
-        "height": 60,
+        "x": 384.96932515337414,
+        "y": 559.7852760736197,
+        "width": 4,
+        "height": 50,
         "rotation": 0,
         "zIndex": 10,
         "locked": false,

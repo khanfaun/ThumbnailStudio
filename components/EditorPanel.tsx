@@ -90,33 +90,12 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
     const [newStyleName, setNewStyleName] = useState('');
     const [newShapeStyleName, setNewShapeStyleName] = useState('');
 
-  useEffect(() => {
-    if (selectedLayers.length === 0 && activeArtboard) {
-        setActivePanelKey('artboard');
-    } else if (selectedLayer) { // selectedLayer is only defined when selectedLayers.length === 1
-        switch (selectedLayer.type) {
-            case LayerType.Text:
-                setActivePanelKey('typography');
-                break;
-            case LayerType.Image:
-            case LayerType.Shape:
-            case LayerType.Line:
-                setActivePanelKey('properties');
-                break;
-            default:
-                setActivePanelKey(null);
-                break;
-        }
-    } else if (selectedLayers.length > 1) {
-        // When multiple layers are selected, default to properties, or keep current panel open
-        if (activePanelKey !== 'properties') {
-           setActivePanelKey('properties');
-        }
-    } else {
-        setActivePanelKey(null);
-    }
-  }, [selectedLayer, selectedLayers.length, activeArtboard]);
+  const textLayer = selectedLayer?.type === LayerType.Text ? selectedLayer as TextLayer : undefined;
+  const shapeLayer = selectedLayer?.type === LayerType.Shape ? selectedLayer as AnyShapeLayer : undefined;
+  const lineLayer = selectedLayer?.type === LayerType.Line ? selectedLayer as LineLayer : undefined;
 
+  // FIX: Moved helper functions and variable declarations to the top of the component scope
+  // to resolve "used before its declaration" errors within the `panelsConfig` array.
   const handleArtboardPropChange = <K extends keyof Artboard>(prop: K, value: Artboard[K]) => {
     if (activeArtboard) onUpdateArtboard(activeArtboard.id, { [prop]: value });
   };
@@ -178,14 +157,6 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
   };
   
   const baseInputClasses = "w-full bg-slate-100 p-2 rounded-md border border-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm";
-  
-  if (position === 'left') {
-    return null;
-  }
-
-  const textLayer = selectedLayer?.type === LayerType.Text ? selectedLayer as TextLayer : undefined;
-  const shapeLayer = selectedLayer?.type === LayerType.Shape ? selectedLayer as AnyShapeLayer : undefined;
-  const lineLayer = selectedLayer?.type === LayerType.Line ? selectedLayer as LineLayer : undefined;
   
   const selectionStyle = (selectionState && selectionState.hasSelection && selectionState.layerId === selectedLayer?.id)
      ? selectionState.styles
@@ -708,6 +679,34 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
     },
   ];
 
+  useEffect(() => {
+    const availablePanelKeys = panelsConfig.filter(p => p.condition).map(p => p.key);
+
+    // If the currently open panel is still valid for the selection, do nothing to prevent it from resetting.
+    if (activePanelKey && availablePanelKeys.includes(activePanelKey)) {
+      return;
+    }
+
+    // If no panel is open, or the current one is invalid (e.g., selection changed), set a sensible default.
+    if (selectedLayers.length === 0 && activeArtboard) {
+      setActivePanelKey('artboard');
+    } else if (selectedLayer) {
+      // A single layer is selected, determine its default panel.
+      if (selectedLayer.type === LayerType.Text) {
+        setActivePanelKey('typography');
+      } else {
+        setActivePanelKey('properties');
+      }
+    } else {
+      // No selection, or multi-selection where panels are not configured to show.
+      setActivePanelKey(null);
+    }
+  }, [selectedLayer, selectedLayers.length, activeArtboard, activePanelKey]);
+
+  if (position === 'left') {
+    return null;
+  }
+  
   const availablePanels = panelsConfig.filter(p => p.condition);
   const expandedPanel = availablePanels.find(p => p.key === activePanelKey);
 
