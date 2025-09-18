@@ -289,7 +289,7 @@ export const useAppLogic = () => {
         try {
           const projectData = {
               version: 2,
-              artboards: artboardsRef.current,
+              artboards: artboards,
               customFonts,
               textStyles,
               shapeStyles,
@@ -308,7 +308,7 @@ export const useAppLogic = () => {
           console.error("Lỗi khi lưu dự án:", error);
           alert("Không thể lưu dự án. Vui lòng xem console để biết chi tiết.");
         }
-    }, [customFonts, textStyles, shapeStyles]);
+    }, [artboards, customFonts, textStyles, shapeStyles]);
     
     const handleResetProject = useCallback(() => {
         try {
@@ -353,20 +353,31 @@ export const useAppLogic = () => {
         const artboard = artboardsRef.current.find(a => a.id === activeArtboardId);
         const container = editorContainerRef.current;
         if (!artboard || !container) return;
-        
+    
         const PADDING = 80;
+        // Dự trữ không gian bên phải cho các panel editor (w-80 + w-12 + padding)
+        const RIGHT_PANEL_AREA_WIDTH = 320 + 48 + 16;
         const { width: containerWidth, height: containerHeight } = container.getBoundingClientRect();
         const { width: artboardWidth, height: artboardHeight } = artboard;
-        
-        const scaleX = (containerWidth - PADDING) / artboardWidth;
+    
+        // Tính toán mức zoom dựa trên không gian có sẵn, có tính đến các panel bên phải
+        const effectiveWidth = containerWidth - RIGHT_PANEL_AREA_WIDTH;
+    
+        const scaleX = (effectiveWidth - PADDING) / artboardWidth;
         const scaleY = (containerHeight - PADDING) / artboardHeight;
         const newZoom = Math.min(scaleX, scaleY, 2);
-        
-        const newPanX = (containerWidth - artboardWidth * newZoom) / 2;
-        const newPanY = (containerHeight - artboardHeight * newZoom) / 2;
-  
+    
+        // Tính toán vị trí pan để artboard được căn giữa hoàn toàn
+        const centerPanX = (containerWidth - artboardWidth * newZoom) / 2;
+        const centerPanY = (containerHeight - artboardHeight * newZoom) / 2;
+    
+        // Dời artboard sang trái một chút để nhường không gian, nhưng không quá nhiều.
+        // Một phần tư chiều rộng của panel là một sự dời chuyển tinh tế hơn.
+        const shiftAmount = RIGHT_PANEL_AREA_WIDTH / 4;
+        const newPanX = centerPanX - shiftAmount;
+    
         setZoom(newZoom);
-        setPan({ x: newPanX, y: newPanY });
+        setPan({ x: newPanX, y: centerPanY });
     }, [activeArtboardId]);
   
     const handleDeleteSelectedLayers = useCallback(() => {
@@ -1002,6 +1013,9 @@ export const useAppLogic = () => {
             const newArtboard: ArtboardType = JSON.parse(JSON.stringify(templateArtboard));
             newArtboard.id = `artboard-csv-${Date.now()}-${index}`;
             newArtboard.name = row['Name'] || `${templateArtboard.name} (Bản sao ${index + 1})`;
+            if (row['Note']) {
+                newArtboard.csvNote = row['Note'];
+            }
 
             const splitLayersToAdd: TextLayer[] = [];
             let newZIndex = Math.max(-1, ...newArtboard.layers.map(l => l.zIndex)) + 1;
@@ -1431,7 +1445,7 @@ export const useAppLogic = () => {
             setKeyObjectLayerId(null);
         }
       }
-    }, [activeArtboard, selectedLayerIds, keyObjectLayerId, updateLayerAndCommit]);
+    }, [activeArtboard, selectedLayerIds, keyObjectLayerId, updateArtboardAndCommit]);
     
     const handleToggleLayerVisibility = useCallback((layerId: string) => {
         if (!activeArtboard) return;
@@ -1439,7 +1453,7 @@ export const useAppLogic = () => {
         if (!layer) return;
 
         updateLayerAndCommit(layerId, { visible: !(layer.visible ?? true) });
-    }, [activeArtboard, updateLayerAndCommit]);
+    }, [activeArtboard, updateArtboardAndCommit]);
     
     const handleLayerSelection = useCallback((layerId: string, options: { isCtrl: boolean, isShift: boolean }, source: 'panel' | 'canvas' = 'panel') => {
         const { isCtrl, isShift } = options;
@@ -1450,7 +1464,7 @@ export const useAppLogic = () => {
         const isRangeSelect = source === 'panel' && isShift && lastClickedLayerId && layerId !== lastClickedLayerId;
 
         if (isRangeSelect) {
-            const sortedLayers = [...artboard.layers].sort((a, b) => b.zIndex - a.zIndex);
+            const sortedLayers = [...artboard.layers].sort((a, b) => b.zIndex - b.zIndex);
             const lastIndex = sortedLayers.findIndex(l => l.id === lastClickedLayerId);
             const currentIndex = sortedLayers.findIndex(l => l.id === layerId);
 

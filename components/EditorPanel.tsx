@@ -677,6 +677,53 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
             </div>
         )
     },
+    {
+      key: 'guides',
+      title: 'Quản lý Guide',
+      icon: <GuidesIcon />,
+      condition: !!activeArtboard,
+      content: (
+        <div className="p-2">
+            <div className="flex items-center space-x-1 bg-slate-100 rounded-md p-0.5">
+                <div className="flex-grow flex items-stretch">
+                    <button onClick={onOpenGuideManager} className="flex-grow hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-2 rounded-md transition-colors text-xs flex items-center justify-center">
+                        Cài đặt nâng cao
+                    </button>
+                </div>
+                <div className="flex-shrink-0 flex items-center border-l border-slate-400/50 pl-1 space-x-0.5">
+                    <button
+                        onClick={() => onSettingsChange({ ...guideSettings, snapToGuides: !guideSettings.snapToGuides })}
+                        className={`p-1.5 rounded-md transition-colors ${guideSettings.snapToGuides ? 'bg-indigo-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}
+                        title="Bật/Tắt hít vào đường gióng"
+                    >
+                        <SnapIcon />
+                    </button>
+                    <button 
+                        onClick={() => onSettingsChange({ ...guideSettings, visible: !guideSettings.visible })}
+                        className={`p-1.5 rounded-md transition-colors ${guideSettings.visible ? 'bg-indigo-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}
+                        title={`Ẩn/Hiện Guides (Ctrl + ;)`}
+                    >
+                        {guideSettings.visible ? <EyeIcon /> : <EyeOffIcon />}
+                    </button>
+                    <button
+                        onClick={() => onSettingsChange({ ...guideSettings, locked: !guideSettings.locked })}
+                        className={`p-1.5 rounded-md transition-colors ${guideSettings.locked ? 'bg-indigo-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}
+                        title={guideSettings.locked ? 'Mở khóa di chuyển Guides' : 'Khóa di chuyển Guides'}
+                    >
+                        {guideSettings.locked ? <LockClosedIcon /> : <LockOpenIcon />}
+                    </button>
+                    <button
+                        onClick={onClearGuides}
+                        className="p-1.5 rounded-md text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors"
+                        title="Xóa tất cả Guides"
+                    >
+                        <TrashIcon />
+                    </button>
+                </div>
+            </div>
+        </div>
+      )
+    }
   ];
 
   useEffect(() => {
@@ -719,7 +766,7 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
           );
       }
       return (
-        <div className="flex items-start space-x-2 h-full">
+        <div className="flex items-start space-x-2">
             <div className="flex flex-col space-y-2">
                 {availablePanels.map(panel => (
                     <div 
@@ -734,7 +781,7 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
             </div>
 
             {expandedPanel && (
-                <div className="w-80 bg-white rounded-lg shadow-md border border-slate-200 text-sm h-full flex flex-col">
+                <div className="w-80 bg-white rounded-lg shadow-md border border-slate-200 text-sm flex flex-col max-h-[calc(100vh-18rem)]">
                     <div className="w-full flex justify-between items-center p-2 text-left font-bold text-slate-800 border-b border-slate-200 flex-shrink-0">
                         <div className="flex items-center space-x-2">
                             <div className="p-1 bg-slate-100 rounded text-slate-600">{expandedPanel.icon}</div>

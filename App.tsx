@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState, memo} from 'react';
-import { Artboard as ArtboardType, LayerType } from './types';
+import { Artboard as ArtboardType, LayerType, TextLayer } from './types';
 import EditorPanel from './components/EditorPanel';
 import ArtboardComponent from './components/Artboard';
 import ArtboardPreview from './components/ArtboardPreview';
@@ -542,6 +542,8 @@ const App: React.FC = () => {
   const sortedLayers = activeArtboard ? [...activeArtboard.layers].sort((a,b) => b.zIndex - a.zIndex) : [];
   const areAllLayersHidden = activeArtboard ? activeArtboard.layers.length > 0 && activeArtboard.layers.every(l => !(l.visible ?? true)) : false;
   const areAllLayersLocked = activeArtboard ? activeArtboard.layers.length > 0 && activeArtboard.layers.every(l => l.locked) : false;
+  
+  const noteText = activeArtboard?.csvNote;
 
   const AlignButton = ({ children, onClick, title, disabled = false }: {children: React.ReactNode, onClick: () => void, title: string, disabled?: boolean}) => (
     <button
@@ -907,49 +909,6 @@ const App: React.FC = () => {
                                     </div>
                                 </CollapsiblePanel>
                             )}
-                            {activeArtboard && (
-                            <CollapsiblePanel title="Quản lý Guide" icon={<GuidesIcon />} storageKey="panel-guides-collapsed">
-                                <div className="p-2">
-                                    <div className="flex items-center space-x-1 bg-slate-100 rounded-md p-0.5">
-                                        <div className="flex-grow flex items-stretch">
-                                            <button onClick={() => setIsGuideManagerOpen(true)} className="flex-grow hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-2 rounded-md transition-colors text-xs flex items-center justify-center">
-                                                Cài đặt nâng cao
-                                            </button>
-                                        </div>
-                                        <div className="flex-shrink-0 flex items-center border-l border-slate-400/50 pl-1 space-x-0.5">
-                                            <button
-                                                onClick={() => setGuideSettings({ ...guideSettings, snapToGuides: !guideSettings.snapToGuides })}
-                                                className={`p-1.5 rounded-md transition-colors ${guideSettings.snapToGuides ? 'bg-indigo-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}
-                                                title="Bật/Tắt hít vào đường gióng"
-                                            >
-                                                <SnapIcon />
-                                            </button>
-                                            <button 
-                                                onClick={() => setGuideSettings({ ...guideSettings, visible: !guideSettings.visible })}
-                                                className={`p-1.5 rounded-md transition-colors ${guideSettings.visible ? 'bg-indigo-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}
-                                                title={`Ẩn/Hiện Guides (Ctrl + ;)`}
-                                            >
-                                                {guideSettings.visible ? <EyeIcon /> : <EyeOffIcon />}
-                                            </button>
-                                            <button
-                                                onClick={() => setGuideSettings({ ...guideSettings, locked: !guideSettings.locked })}
-                                                className={`p-1.5 rounded-md transition-colors ${guideSettings.locked ? 'bg-indigo-100 text-indigo-600' : 'text-slate-500 hover:bg-slate-200'}`}
-                                                title={guideSettings.locked ? 'Mở khóa di chuyển Guides' : 'Khóa di chuyển Guides'}
-                                            >
-                                                {guideSettings.locked ? <LockClosedIcon /> : <LockOpenIcon />}
-                                            </button>
-                                            <button
-                                                onClick={handleClearGuides}
-                                                className="p-1.5 rounded-md text-slate-500 hover:bg-red-100 hover:text-red-600 transition-colors"
-                                                title="Xóa tất cả Guides"
-                                            >
-                                                <TrashIcon />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CollapsiblePanel>
-                            )}
                         </div>
                          <Toolbar onAddLayer={addLayer} />
                          <div className="flex-shrink-0 flex">
@@ -1032,8 +991,27 @@ const App: React.FC = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="absolute top-12 right-4 bottom-4 z-10">
-                           <EditorPanel position="right" {...commonEditorProps} />
+                        <div className="absolute top-12 right-4 bottom-4 z-10 flex flex-col items-end">
+                           <div>
+                                <EditorPanel position="right" {...commonEditorProps} />
+                           </div>
+                           {activeArtboard && (
+                                <div className="w-80 bg-white rounded-lg shadow-md border border-slate-200 text-sm mt-auto">
+                                    <div className="w-full flex justify-between items-center p-2 text-left font-bold text-slate-800 border-b border-slate-200">
+                                        <div className="flex items-center space-x-2">
+                                            <div className="p-1 bg-slate-100 rounded text-slate-600"><InfoIcon /></div>
+                                            <span>Note</span>
+                                        </div>
+                                    </div>
+                                    <div className="p-3 text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 m-2 rounded-md border border-slate-200 min-h-[4rem]">
+                                        {noteText && noteText.trim() !== '' ? (
+                                            noteText
+                                        ) : (
+                                            <span className="text-slate-400 italic">Không có ghi chú từ file CSV cho artboard này.</span>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </main>
                 </>

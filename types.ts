@@ -147,6 +147,7 @@ export interface Artboard {
   backgroundColor: string;
   layers: Layer[];
   guides?: Guide[];
+  csvNote?: string;
 }
 
 export interface TextStyle {
