@@ -76,13 +76,15 @@ const App: React.FC = () => {
       y: 50,
       rotation: 0,
       zIndex: newZIndex,
+      locked: false,
+      visible: true,
     };
 
     if (type === LayerType.Text) {
       newLayer = {
         ...baseLayer,
         type: LayerType.Text,
-        text: 'Văn bản mới',
+        spans: [{ text: 'Văn bản mới' }],
         fontFamily: 'Inter',
         fontSize: 48,
         color: '#ffffff',

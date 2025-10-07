@@ -559,8 +559,8 @@ const EditorPanel: React.FC<EditorPanelProps> = (props) => {
                     fonts={fonts} 
                     selectedLayer={{
                         ...textLayer, 
-                        fontFamily: typeof currentStyle.fontFamily === 'string' ? currentStyle.fontFamily : textLayer.fontFamily,
-                        fontWeight: typeof currentStyle.fontWeight === 'number' ? currentStyle.fontWeight : textLayer.fontWeight,
+                        fontFamily: (typeof currentStyle.fontFamily === 'string' && currentStyle.fontFamily !== 'mixed') ? currentStyle.fontFamily : textLayer.fontFamily,
+                        fontWeight: (typeof currentStyle.fontWeight === 'number') ? currentStyle.fontWeight : textLayer.fontWeight,
                     }}
                     onStyleChange={onApplyStyleToSelection}
                     customFonts={customFonts}

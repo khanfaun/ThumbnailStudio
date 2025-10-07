@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 
 // --- Color Conversion Utilities ---
 
@@ -65,7 +66,8 @@ interface ColorPickerProps {
 const primaryPalette = ['#000000', '#FFFFFF', '#FF4713', '#F6871F', '#90ADFF'];
 const secondaryPalette = ['#6F2DBD', '#8EB780', '#FDE74C', '#D30C7B'];
 
-const ColorSwatch = ({ color, value, onChange }: { color: string; value: string; onChange: (c: string) => void; }) => (
+// FIX: Changed ColorSwatch to be a React.FC to correctly handle React-specific props like `key`.
+const ColorSwatch: React.FC<{ color: string; value: string; onChange: (c: string) => void; }> = ({ color, value, onChange }) => (
     <button
       type="button"
       onClick={() => onChange(color)}
@@ -78,10 +80,17 @@ const ColorSwatch = ({ color, value, onChange }: { color: string; value: string;
 const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, isMixed }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hsv, setHsv] = useState({ h: 0, s: 0, v: 100 });
+  const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
 
-  const pickerRef = useRef<HTMLDivElement>(null);
+  const [inputValue, setInputValue] = useState(value);
+
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
   const saturationRef = useRef<HTMLDivElement>(null);
   const hueRef = useRef<HTMLDivElement>(null);
+  const mainInputRef = useRef<HTMLInputElement>(null);
+  const modalInputRef = useRef<HTMLInputElement>(null);
+
   const isDraggingSaturation = useRef(false);
   const isDraggingHue = useRef(false);
 
@@ -91,10 +100,21 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, isMix
   onChangeRef.current = onChange;
 
   useEffect(() => {
+    if (document.activeElement !== mainInputRef.current && document.activeElement !== modalInputRef.current) {
+        setInputValue(value);
+    }
+  }, [value]);
+
+  useEffect(() => {
+    if (isOpen) {
+        setInputValue(value);
+    }
+  }, [isOpen, value]);
+
+  useEffect(() => {
     const rgb = hexToRgb(value);
     if (rgb) {
       const newHsv = rgbToHsv(rgb.r, rgb.g, rgb.b);
-      // Only update if the color has actually changed to avoid feedback loops
       if (newHsv.h !== hsv.h || newHsv.s !== hsv.s || newHsv.v !== hsv.v) {
         setHsv(newHsv);
       }
@@ -105,9 +125,11 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, isMix
     const currentOnChange = onChangeRef.current;
     
     const handleHsvChange = (newHsv: {h: number, s: number, v: number}) => {
-        setHsv(newHsv); // Update local state immediately for responsiveness
+        setHsv(newHsv);
         const { r, g, b } = hsvToRgb(newHsv.h, newHsv.s, newHsv.v);
-        currentOnChange(rgbToHex(r, g, b));
+        const newHex = rgbToHex(r, g, b);
+        currentOnChange(newHex);
+        setInputValue(newHex);
     };
 
     if (isDraggingSaturation.current && saturationRef.current) {
@@ -142,7 +164,10 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, isMix
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-        if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+        if (
+            buttonRef.current && !buttonRef.current.contains(event.target as Node) &&
+            modalRef.current && !modalRef.current.contains(event.target as Node)
+        ) {
             setIsOpen(false);
         }
     };
@@ -154,6 +179,20 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, isMix
     };
   }, [isOpen]);
   
+  const handleToggleOpen = () => {
+    if (isOpen) {
+        setIsOpen(false);
+    } else if (buttonRef.current) {
+        const rect = buttonRef.current.getBoundingClientRect();
+        let left = rect.left;
+        if (left + 260 > window.innerWidth) {
+            left = rect.right - 260;
+        }
+        setModalPosition({ top: rect.bottom + 8, left });
+        setIsOpen(true);
+    }
+  };
+
   const handleSaturationMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     isDraggingSaturation.current = true;
@@ -170,96 +209,148 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ label, value, onChange, isMix
     handleMouseMove(e.nativeEvent);
   };
 
-  const handleHexInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      let inputVal = e.target.value;
-      if (!inputVal.startsWith('#')) {
-          inputVal = '#' + inputVal;
-      }
-      onChange(inputVal.toUpperCase());
+  const handleLocalInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      setInputValue(e.target.value);
   };
+
+  const formatAndCommit = (valueToCommit: string) => {
+      let sanitized = valueToCommit.trim();
+      if (sanitized.startsWith('#')) {
+          sanitized = sanitized.substring(1);
+      }
+      sanitized = sanitized.replace(/[^0-9a-fA-F]/g, '');
+
+      if (sanitized.length === 6 || sanitized.length === 3) {
+          const finalColor = `#${sanitized.toUpperCase()}`;
+          if (finalColor !== value) {
+              onChange(finalColor);
+          }
+          setInputValue(finalColor);
+      } else {
+          setInputValue(value);
+      }
+  };
+
+  const handleInputBlur = () => {
+      formatAndCommit(inputValue);
+  };
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+          formatAndCommit((e.target as HTMLInputElement).value);
+          (e.target as HTMLInputElement).blur();
+      } else if (e.key === 'Escape') {
+          setInputValue(value);
+          (e.target as HTMLInputElement).blur();
+      }
+  };
+  
+  const PickerModal = (
+      <div
+        ref={modalRef}
+        className="fixed z-20 bg-white p-3 rounded-lg shadow-2xl border border-slate-200 w-[260px]"
+        style={{
+            top: `${modalPosition.top}px`,
+            left: `${modalPosition.left}px`,
+        }}
+      >
+        <div className="w-full space-y-2">
+          <div
+            ref={saturationRef}
+            onMouseDown={handleSaturationMouseDown}
+            style={{ backgroundColor: `hsl(${hsv.h}, 100%, 50%)` }}
+            className="relative w-full h-32 rounded-md cursor-crosshair"
+          >
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, white, transparent)' }} />
+            <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, black, transparent)' }} />
+            <div
+              style={{ left: `${hsv.s}%`, top: `${100 - hsv.v}%` }}
+              className="absolute w-3.5 h-3.5 -ml-[7px] -mt-[7px] rounded-full border-2 border-white shadow-md pointer-events-none ring-1 ring-black/30"
+            />
+          </div>
+
+          <div
+            ref={hueRef}
+            onMouseDown={handleHueMouseDown}
+            className="relative w-full h-3 rounded-full cursor-pointer"
+            style={{ background: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)' }}
+          >
+            <div
+              style={{ left: `${(hsv.h / 360) * 100}%` }}
+              className="absolute w-3.5 h-3.5 top-1/2 -ml-[7px] -mt-[7px] rounded-full border-2 border-white shadow-md pointer-events-none ring-1 ring-black/30"
+            />
+          </div>
+
+          <input
+            ref={modalInputRef}
+            type="text"
+            value={inputValue}
+            onChange={handleLocalInputChange}
+            onBlur={handleInputBlur}
+            onKeyDown={handleInputKeyDown}
+            className="w-full bg-slate-100 p-2 rounded-md border border-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
+          />
+
+          <div className="flex-1 flex flex-col space-y-2 pt-2">
+            <div className="flex items-center space-x-2">
+              {primaryPalette.map(color => (
+                <ColorSwatch key={color} color={color} value={value} onChange={onChange} />
+              ))}
+            </div>
+            <div className="flex items-center space-x-2">
+              {secondaryPalette.map(color => (
+                <ColorSwatch key={color} color={color} value={value} onChange={onChange} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+  );
 
   return (
     <div className="w-full">
       <label className="block text-xs font-medium text-slate-500 mb-1">{label}</label>
-      <div className="relative" ref={pickerRef}>
-        <button
-          type="button"
-          onClick={() => setIsOpen(prev => !prev)}
-          onMouseDown={(e) => e.preventDefault()}
-          className="w-full bg-slate-100 p-2 rounded-md border border-slate-200 flex items-center justify-between text-left focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+      <div className="relative">
+        <div
+          className="w-full bg-white p-2 rounded-md border border-slate-300 flex items-center justify-between text-left focus-within:ring-1 focus-within:ring-indigo-500 focus-within:border-indigo-500"
         >
           {isMixed ? (
-            <span className="text-sm text-slate-500">Nhiều màu</span>
+            <span className="text-sm text-slate-500 flex-grow">Nhiều màu</span>
           ) : (
-            <span className="font-mono text-sm">{value}</span>
+            <input
+              ref={mainInputRef}
+              type="text"
+              value={inputValue}
+              onChange={handleLocalInputChange}
+              onBlur={handleInputBlur}
+              onKeyDown={handleInputKeyDown}
+              className="w-full flex-grow bg-transparent border-none focus:ring-0 p-0 font-mono text-sm"
+              aria-label="Mã màu HEX"
+            />
           )}
-          <div
-            className="w-6 h-6 rounded-md border border-slate-200 flex-shrink-0"
-            style={{
-              backgroundColor: isMixed ? 'transparent' : value,
-              backgroundImage: isMixed
-                ? 'linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%), linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%)'
-                : 'none',
-              backgroundSize: '8px 8px',
-              backgroundPosition: '0 0, 4px 4px',
-            }}
-          />
-        </button>
-
-        {isOpen && (
-          <div
-            className="absolute top-full mt-2 z-20 bg-white p-3 rounded-lg shadow-2xl border border-slate-200 w-[260px]"
+          <button
+            ref={buttonRef}
+            type="button"
+            onClick={handleToggleOpen}
             onMouseDown={(e) => e.preventDefault()}
+            className="flex-shrink-0 ml-2 p-0 border-none bg-transparent rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500"
+            aria-label="Mở bảng chọn màu"
           >
-            <div className="w-full space-y-2">
-              <div
-                ref={saturationRef}
-                onMouseDown={handleSaturationMouseDown}
-                style={{ backgroundColor: `hsl(${hsv.h}, 100%, 50%)` }}
-                className="relative w-full h-32 rounded-md cursor-crosshair"
-              >
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, white, transparent)' }} />
-                <div className="absolute inset-0" style={{ background: 'linear-gradient(to top, black, transparent)' }} />
-                <div
-                  style={{ left: `${hsv.s}%`, top: `${100 - hsv.v}%` }}
-                  className="absolute w-3.5 h-3.5 -ml-[7px] -mt-[7px] rounded-full border-2 border-white shadow-md pointer-events-none ring-1 ring-black/30"
-                />
-              </div>
+            <div
+                className="w-6 h-6 rounded-md border border-slate-200"
+                style={{
+                backgroundColor: isMixed ? 'transparent' : value,
+                backgroundImage: isMixed
+                    ? 'linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%), linear-gradient(45deg, #ddd 25%, transparent 25%, transparent 75%, #ddd 75%)'
+                    : 'none',
+                backgroundSize: '8px 8px',
+                backgroundPosition: '0 0, 4px 4px',
+                }}
+            />
+          </button>
+        </div>
 
-              <div
-                ref={hueRef}
-                onMouseDown={handleHueMouseDown}
-                className="relative w-full h-3 rounded-full cursor-pointer"
-                style={{ background: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)' }}
-              >
-                <div
-                  style={{ left: `${(hsv.h / 360) * 100}%` }}
-                  className="absolute w-3.5 h-3.5 top-1/2 -ml-[7px] -mt-[7px] rounded-full border-2 border-white shadow-md pointer-events-none ring-1 ring-black/30"
-                />
-              </div>
-
-              <input
-                type="text"
-                value={value}
-                onChange={handleHexInputChange}
-                className="w-full bg-slate-100 p-2 rounded-md border border-slate-200 focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm font-mono"
-              />
-
-              <div className="flex-1 flex flex-col space-y-2 pt-2">
-                <div className="flex items-center space-x-2">
-                  {primaryPalette.map(color => (
-                    <ColorSwatch key={color} color={color} value={value} onChange={onChange} />
-                  ))}
-                </div>
-                <div className="flex items-center space-x-2">
-                  {secondaryPalette.map(color => (
-                    <ColorSwatch key={color} color={color} value={value} onChange={onChange} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        {isOpen && ReactDOM.createPortal(PickerModal, document.body)}
       </div>
     </div>
   );

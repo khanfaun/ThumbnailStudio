@@ -90,7 +90,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
               {sortedLayers.map(l => (
                   <div key={l.id} onClick={() => onLayerSelect(l.id)}
                       className={`p-2 rounded cursor-pointer flex justify-between items-center ${selectedLayer?.id === l.id ? 'bg-blue-800' : 'bg-gray-700 hover:bg-gray-600'}`}>
-                      <span>{l.type === 'TEXT' ? (l as TextLayer).text.substring(0, 15) : 'Hình ảnh'}</span>
+                      <span>{l.type === 'TEXT' ? (l as TextLayer).spans.map(s=>s.text).join('').substring(0, 15) : 'Hình ảnh'}</span>
                       <div className="flex items-center space-x-2">
                         <button onClick={(e)=>{e.stopPropagation(); onLayerZIndexChange(l.id, 'up')}}>▲</button>
                         <button onClick={(e)=>{e.stopPropagation(); onLayerZIndexChange(l.id, 'down')}}>▼</button>
@@ -117,7 +117,7 @@ const EditorPanel: React.FC<EditorPanelProps> = ({
             {/* Text specific props */}
             {selectedLayer.type === LayerType.Text && (
               <>
-                <div><label>Nội dung:</label><textarea value={(selectedLayer as TextLayer).text} onChange={(e) => handleLayerPropChange({ text: e.target.value })} className="w-full bg-gray-700 p-1 rounded" /></div>
+                <div><label>Nội dung:</label><textarea value={(selectedLayer as TextLayer).spans.map(s => s.text).join('')} onChange={(e) => handleLayerPropChange({ spans: [{text: e.target.value}] })} className="w-full bg-gray-700 p-1 rounded" /></div>
                 <div><label>Font:</label>
                   <select value={(selectedLayer as TextLayer).fontFamily} onChange={(e) => handleLayerPropChange({ fontFamily: e.target.value })} className="w-full bg-gray-700 p-1 rounded">
                     {availableFonts.map(font => <option key={font} value={font}>{font}</option>)}

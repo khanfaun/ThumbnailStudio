@@ -272,14 +272,9 @@ export const renderArtboardToCanvas = async (artboard: Artboard, allFonts: FontF
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error("Could not get canvas context");
       
-      const fontFaces = allFonts.flatMap(family => family.variants.map(variant => {
-          if(!document.fonts.check(`${variant.weight} 16px ${family.name}`)) {
-            return new FontFace(family.name, `url(${variant.url})`, { weight: String(variant.weight), style: variant.style }).load();
-          }
-          return Promise.resolve(null);
-      }));
-
-      await Promise.all(fontFaces.filter(Boolean));
+      // Wait for all fonts initiated by the app to be loaded and ready.
+      // This is more reliable than re-checking and re-loading fonts here.
+      await document.fonts.ready;
 
       ctx.fillStyle = artboard.backgroundColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);

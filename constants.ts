@@ -173,7 +173,7 @@ export const initialArtboards: Artboard[] = [
           "zIndex": 1,
           "locked": false,
           "type": LayerType.Image,
-          "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/Voucher.png?raw=true",
+          "src": "https://raw.githubusercontent.com/khanfaun/imageproducts/refs/heads/main/demo/Voucher.png",
           "width": 225.55066079295153,
           "height": 111.27753303964755,
           "name": "Voucher"
@@ -187,7 +187,7 @@ export const initialArtboards: Artboard[] = [
           "zIndex": 3,
           "locked": false,
           "type": LayerType.Image,
-          "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/Tuideo.png?raw=true",
+          "src": "https://raw.githubusercontent.com/khanfaun/imageproducts/refs/heads/main/demo/Tuideo.png",
           "width": 377.7973568281938,
           "height": 333.30396475770925
         },
@@ -200,7 +200,7 @@ export const initialArtboards: Artboard[] = [
           "zIndex": 2,
           "locked": false,
           "type": LayerType.Image,
-          "src": "https://github.com/khanfaun/imageproducts/blob/main/demo/Voucher.png?raw=true",
+          "src": "https://raw.githubusercontent.com/khanfaun/imageproducts/refs/heads/main/demo/Voucher.png",
           "width": 225.55066079295153,
           "height": 111.27753303964755,
           "name": "Voucher"

@@ -92,6 +92,7 @@ const generateNewDataId = (baseId: string, allLayers: Layer[]): string => {
 export const useAppLogic = () => {
     const [historyArtboards, setHistoryArtboards, undo, redo, resetHistoryArtboards, canUndo, canRedo] = useHistoryState<ArtboardType[]>(initialAppState);
     const [artboards, setArtboards] = useState(historyArtboards); 
+    const [areFontsReady, setAreFontsReady] = useState(false);
     
     const [customFonts, setCustomFonts] = useState<FontFamily[]>([]);
     const [textStyles, setTextStyles] = useState<TextStyle[]>(initialTextStyles);
@@ -169,33 +170,58 @@ export const useAppLogic = () => {
     const selectedLayer = selectedLayers.length === 1 ? selectedLayers[0] : undefined;
     
     const loadFonts = useCallback(async (fontsToLoad: FontFamily[]) => {
-      for (const family of fontsToLoad) {
-        for (const variant of family.variants) {
-          if (variant.url) {
-            try {
-              const font = new FontFace(family.name, `url(${variant.url})`, {
-                weight: variant.weight.toString(),
-                style: variant.style,
-              });
-              await font.load();
-              document.fonts.add(font);
-            } catch (error) {
-              console.error(`Lỗi tải font: ${family.name} ${variant.name}`, error);
+        const fontPromises: Promise<FontFace>[] = [];
+        for (const family of fontsToLoad) {
+            for (const variant of family.variants) {
+                // Check for URL and if font isn't already available to avoid re-adding.
+                if (variant.url && !document.fonts.check(`${variant.weight} 16px ${family.name}`)) {
+                    try {
+                        const font = new FontFace(family.name, `url(${variant.url})`, {
+                            weight: String(variant.weight),
+                            style: variant.style,
+                        });
+                        fontPromises.push(font.load());
+                    } catch (error) {
+                        console.error(`Lỗi khi tạo FontFace cho ${family.name} ${variant.name}:`, error);
+                    }
+                }
             }
-          }
         }
-      }
+        
+        try {
+            const loadedFonts = await Promise.all(fontPromises);
+            // Add all loaded fonts to the document's font set at once.
+            loadedFonts.forEach(font => document.fonts.add(font));
+        } catch (error) {
+            console.error("Lỗi khi tải một hoặc nhiều font:", error);
+        }
     }, []);
 
     useEffect(() => {
-      if (!isStartupModalOpen) {
-        loadFonts(staticFonts);
-      }
-      if(initialCustomFonts.length > 0){
-        loadFonts(initialCustomFonts).then(() => {
-          setCustomFonts(initialCustomFonts);
-        });
-      }
+        let isMounted = true;
+        const loadAllFonts = async () => {
+            // Load static fonts that are part of the app
+            await loadFonts(staticFonts);
+            
+            // If there's a saved state, load the custom fonts from it
+            if (hasLoadedState && initialCustomFonts.length > 0) {
+                await loadFonts(initialCustomFonts);
+                if (isMounted) {
+                    setCustomFonts(initialCustomFonts);
+                }
+            }
+            
+            // Signal that fonts are ready, which will trigger a re-render of the app
+            if (isMounted) {
+                setAreFontsReady(true);
+            }
+        };
+    
+        if (!isStartupModalOpen) {
+            loadAllFonts();
+        }
+    
+        return () => { isMounted = false; }
     }, [loadFonts, isStartupModalOpen]);
   
     // FIX: Moved these functions higher in the hook to fix a "used before declaration" error.
@@ -863,28 +889,45 @@ export const useAppLogic = () => {
     
     const handleApplyStyleToSelection = useCallback((updates: Partial<TextSpan>) => {
         if (!activeArtboardId || !selectedLayer || selectedLayer.type !== LayerType.Text) return;
-    
+
+        const isFullLayerUpdate = !selectionStateRef.current?.hasSelection;
+
         const updater = (prevArtboards: ArtboardType[]) => prevArtboards.map(a => {
             if (a.id !== activeArtboardId) return a;
             return {
                 ...a,
                 layers: a.layers.map(l => {
                     if (l.id !== selectedLayer.id || l.type !== LayerType.Text) return l;
+
                     const textLayer = l as TextLayer;
-                    const range = selectionStateRef.current?.hasSelection
-                        ? selectionStateRef.current.range
-                        : { start: 0, end: textLayer.spans.reduce((sum, s) => sum + s.text.length, 0) };
-                    
+                    const range = isFullLayerUpdate
+                        ? { start: 0, end: textLayer.spans.reduce((sum, s) => sum + s.text.length, 0) }
+                        : selectionStateRef.current!.range;
+
                     if (!range) return l;
 
                     const newSpans = applyTextStyle(textLayer.spans, range, updates);
                     const mergedSpans = mergeSpans(newSpans.filter(s => s.text && s.text.length > 0));
-                    
-                    return { 
-                        ...textLayer, 
+
+                    const finalLayer: TextLayer = {
+                        ...textLayer,
                         spans: mergedSpans.length > 0 ? mergedSpans : [{ text: '' }],
                         spansVersion: (textLayer.spansVersion || 0) + 1,
                     };
+
+                    // If updating the whole layer, also update the root properties for consistency.
+                    if (isFullLayerUpdate) {
+                        if (updates.fontFamily) finalLayer.fontFamily = updates.fontFamily;
+                        if (updates.fontSize) finalLayer.fontSize = updates.fontSize;
+                        if (updates.fontWeight) finalLayer.fontWeight = updates.fontWeight;
+                        if (updates.color) finalLayer.color = updates.color;
+                        if (updates.underline !== undefined) finalLayer.underline = updates.underline;
+                        if (updates.strikethrough !== undefined) finalLayer.strikethrough = updates.strikethrough;
+                        if (updates.textScript !== undefined) finalLayer.textScript = updates.textScript;
+                        if (updates.textTransform !== undefined) finalLayer.textTransform = updates.textTransform;
+                    }
+
+                    return finalLayer;
                 })
             };
         });
@@ -1166,6 +1209,22 @@ export const useAppLogic = () => {
           }
       }
     };
+
+    const handleDeleteSelectedArtboards = useCallback(() => {
+        const idsToDelete = artboardIdsToExport;
+        if (idsToDelete.length === 0) return;
+
+        const currentArtboards = artboardsRef.current;
+        const remainingArtboards = currentArtboards.filter(a => !idsToDelete.includes(a.id));
+        
+        setHistoryArtboards(remainingArtboards);
+        
+        if (activeArtboardId && idsToDelete.includes(activeArtboardId)) {
+            setActiveArtboardId(remainingArtboards.length > 0 ? remainingArtboards[0].id : null);
+        }
+        
+        setArtboardIdsToExport([]);
+    }, [activeArtboardId, artboardIdsToExport, setHistoryArtboards]);
     
     const handleDuplicateArtboard = useCallback((artboardId: string) => {
         const sourceArtboard = artboards.find(a => a.id === artboardId);
@@ -1226,9 +1285,9 @@ export const useAppLogic = () => {
                 height, 
                 type: LayerType.Text, 
                 spans: [{ text: 'New Text' }], 
-                fontFamily: 'Inter', 
+                fontFamily: 'Arial', 
                 fontSize: 48, 
-                color: '#111827', 
+                color: '#000000', 
                 fontWeight: 700, 
                 textAlign: 'center', 
                 spansVersion: 0 
@@ -1445,7 +1504,7 @@ export const useAppLogic = () => {
             setKeyObjectLayerId(null);
         }
       }
-    }, [activeArtboard, selectedLayerIds, keyObjectLayerId, updateArtboardAndCommit]);
+    }, [activeArtboard, selectedLayerIds, keyObjectLayerId, updateLayerAndCommit]);
     
     const handleToggleLayerVisibility = useCallback((layerId: string) => {
         if (!activeArtboard) return;
@@ -1634,20 +1693,27 @@ export const useAppLogic = () => {
         if (!selectedLayer || selectedLayer.type !== LayerType.Text) return;
         const textLayer = selectedLayer as TextLayer;
 
+        // Determine the dominant style from the spans, falling back to the layer's root properties.
+        const firstSpanWithText = textLayer.spans.find(s => s.text.trim().length > 0);
+        // FIX: Removed `|| {}` which caused type errors. Now `dominantSpan` can be undefined.
+        const dominantSpan = firstSpanWithText || textLayer.spans[0];
+
         const newStyle: TextStyle = {
             id: `style-${Date.now()}`,
             name: name,
-            fontFamily: textLayer.fontFamily,
-            fontWeight: textLayer.fontWeight,
-            fontSize: textLayer.fontSize,
-            textAlign: textLayer.textAlign,
-            color: textLayer.color,
+            // FIX: Used optional chaining to safely access properties on `dominantSpan`.
+            fontFamily: dominantSpan?.fontFamily || textLayer.fontFamily,
+            fontWeight: dominantSpan?.fontWeight || textLayer.fontWeight,
+            fontSize: dominantSpan?.fontSize || textLayer.fontSize,
+            textAlign: textLayer.textAlign, // textAlign is always a layer-level property
+            color: dominantSpan?.color || textLayer.color,
             strokes: textLayer.strokes ? JSON.parse(JSON.stringify(textLayer.strokes)) : [],
             shadow: textLayer.shadow ? JSON.parse(JSON.stringify(textLayer.shadow)) : undefined,
-            underline: textLayer.underline,
-            strikethrough: textLayer.strikethrough,
-            textScript: textLayer.textScript,
-            textTransform: textLayer.textTransform,
+            // These properties can be on spans, so we check the dominant style first.
+            underline: dominantSpan?.underline ?? textLayer.underline,
+            strikethrough: dominantSpan?.strikethrough ?? textLayer.strikethrough,
+            textScript: dominantSpan?.textScript ?? textLayer.textScript,
+            textTransform: dominantSpan?.textTransform ?? textLayer.textTransform,
         };
 
         setTextStyles(prev => [...prev, newStyle]);
@@ -1688,9 +1754,9 @@ export const useAppLogic = () => {
         const textLayer = selectedLayer as TextLayer;
         
         const defaultTextStyleProps = {
-            fontFamily: 'Inter',
+            fontFamily: 'Arial',
             fontSize: 48,
-            color: '#111827',
+            color: '#000000',
             fontWeight: 700,
             textAlign: 'center' as const,
             strokes: [],
@@ -1993,6 +2059,7 @@ export const useAppLogic = () => {
         handleGenerateArtboardsFromCsv,
         handleAddArtboard,
         handleDeleteArtboard,
+        handleDeleteSelectedArtboards,
         handleDuplicateArtboard,
         addLayer,
         deleteLayer,

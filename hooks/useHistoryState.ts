@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 
 export const useHistoryState = <T extends unknown>(initialState: T): readonly [T, (action: React.SetStateAction<T>) => void, () => void, () => void, (newState: T) => void, boolean, boolean] => {
   const [history, setHistory] = useState([initialState]);

@@ -27,6 +27,9 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   public render() {
+    // FIX: Destructure props to potentially help the compiler resolve the property.
+    const { children } = this.props;
+
     if (this.state.hasError) {
       return (
         <div className="flex flex-col items-center justify-center h-screen w-screen bg-slate-100 text-slate-800 font-sans">
@@ -49,7 +52,7 @@ class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.props.children;
+    return children;
   }
 }
 

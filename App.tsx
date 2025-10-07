@@ -1,3 +1,6 @@
+
+
+
 import React, {useRef, useEffect, useState, memo} from 'react';
 import { Artboard as ArtboardType, LayerType, TextLayer } from './types';
 import EditorPanel from './components/EditorPanel';
@@ -201,6 +204,7 @@ const App: React.FC = () => {
   const [editingArtboardId, setEditingArtboardId] = useState<string | null>(null);
   const [editingArtboardName, setEditingArtboardName] = useState('');
   const editArtboardInputRef = useRef<HTMLInputElement>(null);
+  const [isDeleteConfirmModalOpen, setIsDeleteConfirmModalOpen] = useState(false);
 
   const {
     // State
@@ -270,6 +274,7 @@ const App: React.FC = () => {
     handleGenerateArtboardsFromCsv,
     handleAddArtboard,
     handleDeleteArtboard,
+    handleDeleteSelectedArtboards,
     handleDuplicateArtboard,
     addLayer,
     deleteLayer,
@@ -496,6 +501,12 @@ const App: React.FC = () => {
       setDragOverInfo(null);
       setDraggedLayerId(null);
   };
+  
+  const deleteSelectedArtboards = () => {
+    if (artboardIdsToExport.length > 0) {
+        setIsDeleteConfirmModalOpen(true);
+    }
+  };
 
   const commonEditorProps = {
     artboards, activeArtboard, selectedLayer, selectedLayers,
@@ -545,7 +556,8 @@ const App: React.FC = () => {
   
   const noteText = activeArtboard?.csvNote;
 
-  const AlignButton = ({ children, onClick, title, disabled = false }: {children: React.ReactNode, onClick: () => void, title: string, disabled?: boolean}) => (
+  // FIX: Converted AlignButton to a React.FC to correctly type the `children` prop and resolve linter errors.
+  const AlignButton: React.FC<{onClick: () => void, title: string, disabled?: boolean}> = ({ children, onClick, title, disabled = false }) => (
     <button
         onClick={onClick}
         title={title}
@@ -591,6 +603,18 @@ const App: React.FC = () => {
             onClose={() => setIsExportModalOpen(false)}
             artboardsToExport={artboards.filter(a => artboardIdsToExport.includes(a.id))}
             onExport={handleStartExport}
+        />
+        <ConfirmModal
+            isOpen={isDeleteConfirmModalOpen}
+            onClose={() => setIsDeleteConfirmModalOpen(false)}
+            onConfirm={() => {
+                handleDeleteSelectedArtboards();
+                setIsDeleteConfirmModalOpen(false);
+            }}
+            title="Xác nhận xóa Artboard"
+            message={
+                <p>Bạn có chắc chắn muốn xóa <span className="font-bold text-red-600">{artboardIdsToExport.length}</span> artboard đã chọn không? Hành động này không thể hoàn tác.</p>
+            }
         />
         {isGuideManagerOpen && activeArtboard && (
           <GuideManagerModal 
@@ -713,13 +737,24 @@ const App: React.FC = () => {
                                 />
                                 <label htmlFor="select-all" className="text-sm font-medium text-slate-600">Chọn tất cả</label>
                             </div>
-                            <button 
-                                onClick={handleOpenExportModal} 
-                                disabled={artboards.length === 0}
-                                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm disabled:bg-slate-300 disabled:cursor-not-allowed"
-                            >
-                                Export {artboardIdsToExport.length > 0 ? `(${artboardIdsToExport.length})` : ''}
-                            </button>
+                            <div className="flex items-center space-x-2">
+                                <button 
+                                    onClick={handleOpenExportModal} 
+                                    disabled={artboardIdsToExport.length === 0}
+                                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm disabled:bg-slate-300 disabled:cursor-not-allowed"
+                                >
+                                    Export {artboardIdsToExport.length > 0 ? `(${artboardIdsToExport.length})` : ''}
+                                </button>
+                                <button
+                                    onClick={deleteSelectedArtboards}
+                                    disabled={artboardIdsToExport.length === 0}
+                                    className="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center space-x-2"
+                                    title="Xóa các artboard đã chọn"
+                                >
+                                    <TrashIcon />
+                                    <span>Xóa{artboardIdsToExport.length > 0 ? ` (${artboardIdsToExport.length})` : ''}</span>
+                                </button>
+                            </div>
                         </div>
                         <div className="flex items-center space-x-4">
                              <div className="flex items-center space-x-2">
@@ -1020,6 +1055,35 @@ const App: React.FC = () => {
         </>}
     </div>
   );
+};
+
+interface ConfirmModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  title: string;
+  message: React.ReactNode;
+}
+
+const ConfirmModal: React.FC<ConfirmModalProps> = ({ isOpen, onClose, onConfirm, title, message }) => {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-sm p-6 space-y-4" onClick={e => e.stopPropagation()}>
+                <h2 className="text-xl font-bold text-slate-800">{title}</h2>
+                <div className="text-sm text-slate-600">{message}</div>
+                <div className="flex justify-end space-x-3 pt-4">
+                    <button onClick={onClose} className="py-2 px-4 rounded-md text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors">
+                        Hủy
+                    </button>
+                    <button onClick={onConfirm} className="py-2 px-4 rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors">
+                        Xác nhận Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 };
 
 

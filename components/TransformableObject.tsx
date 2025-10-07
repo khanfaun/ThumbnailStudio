@@ -343,7 +343,45 @@ const TransformableObject: React.FC<TransformableObjectProps> = ({
           const rotatedDx = dx * cos + dy * sin;
           const rotatedDy = -dx * sin + dy * cos;
           
-          if (layer.type === LayerType.Text) {
+          const isSideHandle = type === 'resize-t' || type === 'resize-b' || type === 'resize-l' || type === 'resize-r';
+          const isStretchingText = layer.type === LayerType.Text && moveEvent.shiftKey && isSideHandle;
+
+          if (isStretchingText) {
+              const { initialWidth, initialHeight, centerX, centerY } = interactionRef.current;
+              
+              let newWidth = initialWidth, newHeight = initialHeight;
+              if (type.includes('r')) newWidth += rotatedDx;
+              if (type.includes('l')) newWidth -= rotatedDx;
+              if (type.includes('b')) newHeight += rotatedDy;
+              if (type.includes('t')) newHeight -= rotatedDy;
+
+              newWidth = Math.max(10, newWidth);
+              newHeight = Math.max(10, newHeight);
+
+              const widthChange = newWidth - initialWidth;
+              const heightChange = newHeight - initialHeight;
+
+              let cxChange = 0; let cyChange = 0;
+              if (type.includes('l')) cxChange = -widthChange / 2;
+              if (type.includes('r')) cxChange = widthChange / 2;
+              if (type.includes('t')) cyChange = -heightChange / 2;
+              if (type.includes('b')) cyChange = heightChange / 2;
+              
+              const worldCxChange = cxChange * cos - cyChange * sin;
+              const worldCyChange = cxChange * sin + cyChange * cos;
+              const newCenter = { x: centerX + worldCxChange, y: centerY + worldCyChange };
+
+              const finalX = newCenter.x - newWidth / 2;
+              const finalY = newCenter.y - newHeight / 2;
+              
+              const updates: Partial<TextLayer> = {
+                  width: newWidth,
+                  height: newHeight,
+                  x: finalX,
+                  y: finalY,
+              };
+              onUpdateLive(updates);
+          } else if (layer.type === LayerType.Text) {
               const textLayer = layer as TextLayer;
               const { initialWidth, initialHeight, initialX, initialY, centerX, centerY } = interactionRef.current;
               const initialLayerState = interactionRef.current.initialLayers.find((l: Layer) => l.id === layer.id) as TextLayer;
@@ -557,15 +595,17 @@ const TransformableObject: React.FC<TransformableObjectProps> = ({
                         newSpans.push({ text: '\n', ...getStyleFromElement(el) });
                     } else {
                         // Recurse into other elements like <span>.
-                        Array.from(el.childNodes).forEach(traverse);
+                        // FIX: Correctly wrap the recursive call in an anonymous function to prevent `forEach` from passing extra arguments.
+                        Array.from(el.childNodes).forEach(child => traverse(child));
                     }
                 }
             };
-
-            traverse(node);
+            // FIX: Add a type assertion to `node` to resolve TS inference issues.
+            traverse(node as Node);
 
             // For Chrome, which wraps lines in <div>s, add a newline after each div except the last one.
-            if (node.nodeName === 'DIV' && index < childNodes.length - 1) {
+            // FIX: Add a type assertion to `node` to resolve TS inference issues.
+            if ((node as Node).nodeName === 'DIV' && index < childNodes.length - 1) {
                 const lastSpan = newSpans[newSpans.length - 1];
                 if (lastSpan && !lastSpan.text.endsWith('\n')) {
                     lastSpan.text += '\n';
